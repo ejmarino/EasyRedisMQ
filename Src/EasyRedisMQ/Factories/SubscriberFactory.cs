@@ -9,27 +9,24 @@ namespace EasyRedisMQ.Factories
 {
     public class SubscriberFactory : ISubscriberFactory
     {
-        private IQueueNameResolver _queueNameResolver;
-        private IExchangeNameResolver _exchangeNameResolver;
-        private ICacheClient _cacheClient;
-        private IExchangeSubscriberService _exchangeSubscriberService;
+        private IKeyResolver keyResolver;
+        private ICacheClient cacheClient;
+        private IExchangeSubscriberService subscriberService;
 
-        public SubscriberFactory(IQueueNameResolver queueNameResolver, 
-            IExchangeNameResolver exchangeNameResolver, 
+        public SubscriberFactory(IKeyResolver keyResolver, 
             ICacheClient cacheClient, 
-            IExchangeSubscriberService exchangeSubscriberService)
+            IExchangeSubscriberService subscriberService)
         {
-            _queueNameResolver = queueNameResolver;
-            _exchangeNameResolver = exchangeNameResolver;
-            _cacheClient = cacheClient;
-            _exchangeSubscriberService = exchangeSubscriberService;
+            this.keyResolver = keyResolver;
+            this.cacheClient = cacheClient;
+            this.subscriberService = subscriberService;
         }
 
         public async Task<Subscriber<T>> CreateSubscriberAsync<T>(string subscriberId, Func<T, Task> onMessageAsync) where T : class
         {
-            var exchangeName = _exchangeNameResolver.GetExchangeName<T>();
-            var queueName = _queueNameResolver.GetQueueName(exchangeName, subscriberId);
-            var subscriber = new Subscriber<T>(_cacheClient, _exchangeSubscriberService)
+            var exchangeName = keyResolver.GetExchangeKey(typeof(T));
+            var queueName = keyResolver.GetQueueKey(exchangeName, subscriberId);
+            var subscriber = new Subscriber<T>(cacheClient, subscriberService)
             {
                 SubscriberInfo = new SubscriberInfo
                 {

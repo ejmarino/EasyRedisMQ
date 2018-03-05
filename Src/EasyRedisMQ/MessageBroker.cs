@@ -1,10 +1,9 @@
 ﻿using EasyRedisMQ.Factories;
 using EasyRedisMQ.Models;
-using EasyRedisMQ.Resolvers;
 using EasyRedisMQ.Services;
-using StackExchange.Redis.Extensions.Core;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Caching;
 using System.Threading.Tasks;
 
@@ -12,52 +11,59 @@ namespace EasyRedisMQ
 {
     public class MessageBroker : IMessageBroker
     {
-        private IExchangeSubscriberService _exchangeSubscriberService;
-        private INotificationService _notificationService;
-        private ISubscriberFactory _subscriberFactory;
-        private MemoryCache _memoryCache;
+        private const string DefaultSubscriberId = "default";
+        private IExchangeSubscriberService exchangeSubscriberService;
+        private INotificationService notificationService;
+        private ISubscriberFactory subscriberFactory;
+        private MemoryCache memoryCache;
 
         public MessageBroker(IExchangeSubscriberService exchangeSubscriberService, INotificationService notificationService, ISubscriberFactory subscriberFactory)
         {
-            _exchangeSubscriberService = exchangeSubscriberService;
-            _notificationService = notificationService;
-            _subscriberFactory = subscriberFactory;
-            _memoryCache = MemoryCache.Default;
+            this.exchangeSubscriberService = exchangeSubscriberService;
+            this.notificationService = notificationService;
+            this.subscriberFactory = subscriberFactory;
+            memoryCache = MemoryCache.Default;
         }
 
-        public async Task PublishAsync<T>(T message) where T : class
+        private async Task PublishAsync(object message, Type type)
         {
-            var subscriberInfos = await GetSubscriberInfosAsync<T>();
+            var subscriberInfos = await GetSubscriberInfosAsync(type);
 
-            var tasks = new List<Task>();
-            foreach (var subscriberInfo in subscriberInfos)
-            { 
-                tasks.Add(_exchangeSubscriberService.PushMessageToSubscriberAsync(subscriberInfo, message));
-            }
+            var tasks = subscriberInfos.Select(subscriberInfo =>
+            {
+                return exchangeSubscriberService.PushMessageToSubscriberAsync(subscriberInfo, message);
+            }).ToList();
+
             await Task.WhenAll(tasks);
-
-            await _notificationService.NotifyOfNewMessagesAsync(message);
+            await notificationService.NotifyOfNewMessagesAsync(message);
         }
+
+        public async Task PublishAsyncAsObject(object message) =>
+            await PublishAsync(message, message.GetType());
+
+        public async Task PublishAsync<T>(T message) where T : class =>
+            await PublishAsync(message, typeof(T));
+
+        public async Task<Subscriber<T>> SubscribeAsync<T>(Func<T, Task> onMessageAsync) where T : class =>
+           await SubscribeAsync<T>(DefaultSubscriberId, onMessageAsync);
 
         public async Task<Subscriber<T>> SubscribeAsync<T>(string subscriberId, Func<T, Task> onMessageAsync) where T : class
         {
-            var subScriber = await _subscriberFactory.CreateSubscriberAsync(subscriberId, onMessageAsync);
+            var subScriber = await subscriberFactory.CreateSubscriberAsync(subscriberId, onMessageAsync);
             await AddSubscriberAsync(subScriber);
             return subScriber;
         }
 
-        private async Task AddSubscriberAsync<T>(Subscriber<T> subScriber) where T : class
-        {
-            await _exchangeSubscriberService.AddSubscriberAsync(subScriber);
-        }
+        private async Task AddSubscriberAsync<T>(Subscriber<T> subscriber) where T : class =>
+            await exchangeSubscriberService.AddSubscriberAsync(subscriber);
 
-        private async Task<List<SubscriberInfo>> GetSubscriberInfosAsync<T>() where T : class
+        private async Task<List<SubscriberInfo>> GetSubscriberInfosAsync(Type type)
         {
-            var typeName = typeof(T).FullName;
-            var cachedSubscriberInfos = _memoryCache[typeName] as List<SubscriberInfo>;
-            if (cachedSubscriberInfos != null) return cachedSubscriberInfos;
-            var subscriberInfos = await _exchangeSubscriberService.GetSubscriberInfosAsync<T>();
-            _memoryCache.Add(typeName, subscriberInfos, DateTimeOffset.Now.AddSeconds(15));
+            var typeName = type.FullName;
+            if (memoryCache[typeName] is List<SubscriberInfo> cachedSubscriberInfos)
+                return cachedSubscriberInfos;
+            var subscriberInfos = await exchangeSubscriberService.GetSubscriberInfosAsync(type);
+            memoryCache.Add(typeName, subscriberInfos, DateTimeOffset.Now.AddSeconds(15));
             return subscriberInfos;
         }
     }

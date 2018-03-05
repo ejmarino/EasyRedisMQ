@@ -9,7 +9,9 @@ namespace EasyRedisMQ
 {
     public interface IMessageBroker
     {
+        Task PublishAsyncAsObject(object message);
         Task PublishAsync<T>(T message) where T : class;
+        Task<Subscriber<T>> SubscribeAsync<T>(Func<T, Task> onMessageAsync) where T : class;
         Task<Subscriber<T>> SubscribeAsync<T>(string subscriptionId, Func<T, Task> onMessageAsync) where T : class;
     }
 }

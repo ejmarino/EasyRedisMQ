@@ -10,19 +10,19 @@ namespace EasyRedisMQ.Services
 {
     public class NotificationService : INotificationService
     {
-        private readonly ICacheClient _cacheClient;
-        private readonly IExchangeNameResolver _exchangeNameResolver;
+        private readonly ICacheClient cacheClient;
+        private readonly IKeyResolver nameResolver;
 
-        public NotificationService(ICacheClient cacheClient, IExchangeNameResolver exchangeNameResolver)
+        public NotificationService(ICacheClient cacheClient, IKeyResolver nameResolver)
         {
-            _cacheClient = cacheClient;
-            _exchangeNameResolver = exchangeNameResolver;
+            this.cacheClient = cacheClient;
+            this.nameResolver = nameResolver;
         }
 
         public async Task NotifyOfNewMessagesAsync(object message)
         {
-            var exchangeName = _exchangeNameResolver.GetExchangeName(message);
-            await _cacheClient.PublishAsync(exchangeName, exchangeName);
+            var exchangeName = nameResolver.GetExchangeKey(message.GetType());
+            await cacheClient.PublishAsync(exchangeName, exchangeName);
         }
     }
 }

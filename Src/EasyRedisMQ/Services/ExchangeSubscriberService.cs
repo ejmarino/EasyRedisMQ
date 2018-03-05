@@ -4,36 +4,44 @@ using EasyRedisMQ.Models;
 using StackExchange.Redis.Extensions.Core;
 using EasyRedisMQ.Resolvers;
 using System.Linq;
+using System;
 
 namespace EasyRedisMQ.Services
 {
     public class ExchangeSubscriberService : IExchangeSubscriberService
     {
-        private readonly ICacheClient _cacheClient;
-        private IExchangeSubscribersResolver _exchangeSubscribersResolver;
+        private readonly ICacheClient cacheClient;
+        private IKeyResolver keyResolver;
 
-        public ExchangeSubscriberService(ICacheClient cacheClient, IExchangeSubscribersResolver exchangeSubscribersResolver)
+        public ExchangeSubscriberService(ICacheClient cacheClient, IKeyResolver keyResolver)
         {
-            _cacheClient = cacheClient;
-            _exchangeSubscribersResolver = exchangeSubscribersResolver;
+            this.cacheClient = cacheClient;
+            this.keyResolver = keyResolver;
         }
 
         public async Task AddSubscriberAsync<T>(Subscriber<T> subScriber) where T : class
         {
-            var subscriberKey = _exchangeSubscribersResolver.GetSubscriberKey<T>();
-            var wasSuccessful = await _cacheClient.SetAddAsync<SubscriberInfo>(subscriberKey, subScriber.SubscriberInfo);
+            var subscriberKey = keyResolver.GetSubscriberKey(typeof(T));
+            var wasSuccessful = await cacheClient.SetAddAsync<SubscriberInfo>(subscriberKey, subScriber.SubscriberInfo);
+        }
+
+        public async Task<List<SubscriberInfo>> GetSubscriberInfosAsync(Type type)
+        {
+            var subscriberKey = keyResolver.GetSubscriberKey(type);
+            var subscribers = await cacheClient.SetMembersAsync<SubscriberInfo>(subscriberKey);
+            return subscribers.ToList();
         }
 
         public async Task<List<SubscriberInfo>> GetSubscriberInfosAsync<T>() where T : class
         {
-            var subscriberKey = _exchangeSubscribersResolver.GetSubscriberKey<T>();
-            var subscribers = await _cacheClient.SetMembersAsync<SubscriberInfo>(subscriberKey);
+            var subscriberKey = keyResolver.GetSubscriberKey(typeof(T));
+            var subscribers = await cacheClient.SetMembersAsync<SubscriberInfo>(subscriberKey);
             return subscribers.ToList();
         }
 
         public async Task PushMessageToSubscriberAsync<T>(SubscriberInfo subscriberInfo, T message) where T : class
         {
-            await _cacheClient.ListAddToLeftAsync(subscriberInfo.QueueName, message);
+            await cacheClient.ListAddToLeftAsync(subscriberInfo.QueueName, message);
         }
     }
 }
