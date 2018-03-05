@@ -25,7 +25,7 @@ var exchangeKey = string.Format("MQ_Exchange:{0}", typeof(T).Name);
 **Subscribers**
 Subscribers subscribe to a specific message type T. When subscribing to a message type T the subscriber must provider a subscriberId. Each *unique* subscriberId for each exchange is stored in a redis set. The convention for storing the subscribers to an exchange is:
 ```cs
-var exchangeSubscribersKey = string.Format("{0}:Subscribers", exchangeName);
+var exchangeSubscribersKey = string.Format("{0}:Subscribers", exchangeKey);
 ```
 
 **Queues**
