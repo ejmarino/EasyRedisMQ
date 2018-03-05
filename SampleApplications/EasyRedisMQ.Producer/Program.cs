@@ -36,7 +36,7 @@ namespace EasyRedisMQ.Producer
             stopWatch.Start();
             for(int x = 0; x <= numberOfMessagesToPublish; x++)
             {
-                messageBroker.PublishAsync<ConsoleMessage>(new ConsoleMessage
+                messageBroker.PublishAsync(new ConsoleMessage
                 {
                     Message = x.ToString()
                 });
@@ -48,7 +48,7 @@ namespace EasyRedisMQ.Producer
             {
                 Console.WriteLine("Enter message to be published. Ctrl+C to quit.");
                 var message = Console.ReadLine();
-                messageBroker.PublishAsync<ConsoleMessage>(new ConsoleMessage
+                messageBroker.PublishAsync(new ConsoleMessage
                 {
                     Message = message
                 });

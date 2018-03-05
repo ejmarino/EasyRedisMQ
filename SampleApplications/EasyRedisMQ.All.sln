@@ -1,9 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyRedisMQ.ADifferentConsumer", "EasyRedisMQ.ADifferentConsumer\EasyRedisMQ.ADifferentConsumer.csproj", "{66A1D839-0209-4552-8CFF-564001713125}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8C4C9B6D-0C8D-4BFB-BF9E-FDEAF7190ADD} = {8C4C9B6D-0C8D-4BFB-BF9E-FDEAF7190ADD}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyRedisMQ.Consumer2", "EasyRedisMQ.Consumer2\EasyRedisMQ.Consumer2.csproj", "{BF9D1BA8-8C2C-42ED-9D42-8B9021DB224F}"
 EndProject
@@ -12,6 +15,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyRedisMQ.Producer", "EasyRedisMQ.Producer\EasyRedisMQ.Producer.csproj", "{F2BA9DF5-439D-4BDF-911C-E85C8CD2B143}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedModels", "SharedModels\SharedModels.csproj", "{E22B27A9-76C2-4F68-BEAA-6F4BF971FF86}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyRedisMQ", "..\Src\EasyRedisMQ\EasyRedisMQ.csproj", "{8C4C9B6D-0C8D-4BFB-BF9E-FDEAF7190ADD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,8 +44,15 @@ Global
 		{E22B27A9-76C2-4F68-BEAA-6F4BF971FF86}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E22B27A9-76C2-4F68-BEAA-6F4BF971FF86}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E22B27A9-76C2-4F68-BEAA-6F4BF971FF86}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C4C9B6D-0C8D-4BFB-BF9E-FDEAF7190ADD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C4C9B6D-0C8D-4BFB-BF9E-FDEAF7190ADD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C4C9B6D-0C8D-4BFB-BF9E-FDEAF7190ADD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C4C9B6D-0C8D-4BFB-BF9E-FDEAF7190ADD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F7942FCA-83C6-4E9F-9060-A3626B116E52}
 	EndGlobalSection
 EndGlobal
