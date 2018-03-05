@@ -17,21 +17,21 @@ EasyRedisMQ relies on class types to handle publishing and subscribing to messag
 EasyRedisMQ is fully built to take advantage of asynchronous processing within .Net. All methods implement the async/await keywords.  Since the inherit nature of communicating with a redis database is an asynchronous process, there are no synchronous method implementations within EasyRedisMQ.
 
 **Exchanges**
-Exchanges are like post offices. They handle the routing of messages from publishers to subscribers. Publishers push messages to an exchange and subscribers subscribe to an exchange. Publishers do not know about the subscribers and subscribers do not know about the publishers. An exchange name is established using the following convention:
+Exchanges are like post offices. They handle the routing of messages from publishers to subscribers. Publishers push messages to an exchange and subscribers subscribe to an exchange. Publishers do not know about the subscribers and subscribers do not know about the publishers. An exchange key is established using the following convention:
 ```cs
-var exchangeName = string.Format("Exchange.{0}", typeof(T).FullName);
+var exchangeKey = string.Format("MQ_Exchange:{0}", typeof(T).Name);
 ```
 
 **Subscribers**
 Subscribers subscribe to a specific message type T. When subscribing to a message type T the subscriber must provider a subscriberId. Each *unique* subscriberId for each exchange is stored in a redis set. The convention for storing the subscribers to an exchange is:
 ```cs
-var exchangeSubscribersKey = string.Format("{0}.Subscribers", exchangeName);
+var exchangeSubscribersKey = string.Format("{0}:Subscribers", exchangeName);
 ```
 
 **Queues**
-Queues are stored as a list in redis.  The list will only show up in redis if there are objects in the queue, otherwise the redis key is deleted and then recreated once items are added. Objects on the queue are serialized to JSON using the ultra-fast Jil JSON (De)Serializer. Each unique subscriberId will get its own queue. If multiple applications use the same subscriberId then only one queue will be created. Queues names are established using the following convention:
+Queues are stored as a list in redis.  The list will only show up in redis if there are objects in the queue, otherwise the redis key is deleted and then recreated once items are added. Objects on the queue are serialized to JSON using the ultra-fast Jil JSON (De)Serializer. Each unique subscriberId will get its own queue. If no subscriberId is specified, 'default' will be used as Id. If multiple applications use the same subscriberId then only one queue will be created. Queues key are established using the following convention:
 ```cs
-var subscriberQueueName = string.Format("{0}.Queue.{1}", exchangeName, subscriberId);
+var subscriberQueueKey = string.Format("{0}:Queue:{1}", exchangeKey, subscriberId);
 ```
 
 **Publishers**
@@ -104,17 +104,24 @@ Dependencies
 ------------
 EasyRedisMQ uses the following dependencies:
 
-> 1. [StackExchange.Redis.Extensions.Jil](https://github.com/imperugo/StackExchange.Redis.Extensions)
+> 1. [StackExchange.Redis.Extensions.Core](https://github.com/imperugo/StackExchange.Redis.Extensions)
 
-> 2. [StackExchange.Redis](https://github.com/StackExchange/StackExchange.Redis)
+> 2. [StackExchange.Redis.StrongName](https://github.com/StackExchange/StackExchange.Redis)
 
-> 3. [Jil](https://github.com/kevin-montrose/Jil)
+If you want to use Jil serializer: 
 
+> 3. [StackExchange.Redis.Extensions.Jil](https://github.com/imperugo/StackExchange.Redis.Extensions)
+
+> 4. [Jil](https://github.com/kevin-montrose/Jil)
+
+If you want Newtonsoft serializer: 
+
+> 3. [StackExchange.Redis.Extensions.Newtonsoft](https://github.com/imperugo/StackExchange.Redis.Extensions)
+
+> 4. [Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json)
 
 Inspiration
 -----------
 A major source of inspiration for this project is [EasyNetQ](https://github.com/EasyNetQ/EasyNetQ)
-
-
 
 > Written with [StackEdit](https://stackedit.io/).
