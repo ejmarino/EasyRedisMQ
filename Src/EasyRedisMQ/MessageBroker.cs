@@ -25,7 +25,10 @@ namespace EasyRedisMQ
             memoryCache = MemoryCache.Default;
         }
 
-        private async Task PublishAsync(object message, Type type)
+        public async Task PublishAsync(object message) =>
+            await PublishAsync(message, message.GetType());
+
+        public async Task PublishAsync(object message, Type type)
         {
             var subscriberInfos = await GetSubscriberInfosAsync(type);
 
@@ -37,12 +40,6 @@ namespace EasyRedisMQ
             await Task.WhenAll(tasks);
             await notificationService.NotifyOfNewMessagesAsync(message);
         }
-
-        public async Task PublishAsyncAsObject(object message) =>
-            await PublishAsync(message, message.GetType());
-
-        public async Task PublishAsync<T>(T message) where T : class =>
-            await PublishAsync(message, typeof(T));
 
         public async Task<Subscriber<T>> SubscribeAsync<T>(Func<T, Task> onMessageAsync) where T : class =>
            await SubscribeAsync<T>(DefaultSubscriberId, onMessageAsync);

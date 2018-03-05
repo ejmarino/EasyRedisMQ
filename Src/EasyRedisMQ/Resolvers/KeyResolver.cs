@@ -4,6 +4,13 @@ namespace EasyRedisMQ.Resolvers
 {
     public class KeyResolver : IKeyResolver
     {
+        public static void SetupLegacyKeyNames()
+        {
+            BaseExchangeKey = "Exchange";
+            Separator = ".";
+            TypeNameFunc = type => type.FullName;
+        }
+
         public static string BaseExchangeKey = "MQ_Exchange";
         public static string Separator = ":";
         public static Func<Type, string> TypeNameFunc = type => type.Name;
