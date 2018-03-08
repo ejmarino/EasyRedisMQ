@@ -31,8 +31,8 @@ namespace EasyRedisMQ.Factories
                 SubscriberInfo = new SubscriberInfo
                 {
                     SubscriberId = subscriberId,
-                    ExchangeName = exchangeName,
-                    QueueName = queueName
+                    ExchangeKey = exchangeName,
+                    QueueKey = queueName
                 },
                 OnMessageAsync = onMessageAsync
             };

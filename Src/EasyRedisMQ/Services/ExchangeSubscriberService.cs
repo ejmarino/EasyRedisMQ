@@ -41,7 +41,7 @@ namespace EasyRedisMQ.Services
 
         public async Task PushMessageToSubscriberAsync<T>(SubscriberInfo subscriberInfo, T message) where T : class
         {
-            await cacheClient.ListAddToLeftAsync(subscriberInfo.QueueName, message);
+            await cacheClient.ListAddToLeftAsync(subscriberInfo.QueueKey, message);
         }
     }
 }

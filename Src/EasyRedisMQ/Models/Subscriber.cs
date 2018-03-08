@@ -2,48 +2,68 @@
 using EasyRedisMQ.Services;
 using StackExchange.Redis.Extensions.Core;
 using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace EasyRedisMQ.Models
 {
-    public class Subscriber<T> where T : class
+    public abstract class SubscriberBase
     {
-        private ICacheClient _cacheClient;
-        private IExchangeSubscriberService _exchangeSubscriberService;
-
-        public Subscriber(ICacheClient cacheClient, IExchangeSubscriberService exchangeSubscriberService)
-        {
-            _cacheClient = cacheClient;
-            _exchangeSubscriberService = exchangeSubscriberService;
-        }
+        protected ICacheClient cacheClient;
 
         public SubscriberInfo SubscriberInfo { get; set; }
-        public Func<T, Task> OnMessageAsync { get; set; }
 
-        public async Task InitializeAsync()
+        protected SubscriberBase(ICacheClient cacheClient)
+        {
+            this.cacheClient = cacheClient;
+        }
+
+        public virtual async Task InitializeAsync()
         {
             if (SubscriberInfo == null) throw new NullReferenceException("SubscriberInfo is required.");
             if (string.IsNullOrWhiteSpace(SubscriberInfo.SubscriberId)) throw new NullReferenceException("SubscriberId is required");
-            if (string.IsNullOrWhiteSpace(SubscriberInfo.ExchangeName)) throw new NullReferenceException("ExchangeName is required");
-            if (string.IsNullOrWhiteSpace(SubscriberInfo.QueueName)) throw new NullReferenceException("QueueName is required");
-            if (OnMessageAsync == null) throw new NullReferenceException("OnMessageAsync is required");
+            if (string.IsNullOrWhiteSpace(SubscriberInfo.ExchangeKey)) throw new NullReferenceException("ExchangeName is required");
+            if (string.IsNullOrWhiteSpace(SubscriberInfo.QueueKey)) throw new NullReferenceException("QueueName is required");
 
-            await _cacheClient.SubscribeAsync<string>(SubscriberInfo.ExchangeName, DoWorkAsync);
+            await cacheClient.SubscribeAsync<string>(SubscriberInfo.ExchangeKey, DoWorkAsync);
 
             DoWorkAsync("").FireAndForget();
         }
 
-        private async Task<T> GetNextMessageAsync()
+        protected abstract Task DoWorkAsync(string arg);
+
+        public async Task UnsubscribeAsync() =>
+            await cacheClient.UnsubscribeAsync<string>(SubscriberInfo.ExchangeKey, DoWorkAsync);
+
+    }
+
+    public class Subscriber<T> : SubscriberBase where T : class
+    {
+        private IExchangeSubscriberService exchangeSubscriberService;
+
+        public Subscriber(ICacheClient cacheClient, IExchangeSubscriberService exchangeSubscriberService)
+            : base(cacheClient)
         {
-            return await _cacheClient.ListGetFromRightAsync<T>(SubscriberInfo.QueueName);
+            this.exchangeSubscriberService = exchangeSubscriberService;
         }
 
-        private async Task DoWorkAsync(string arg)
+        public Func<T, Task> OnMessageAsync { get; set; }
+
+        private async Task<T> GetNextMessageAsync() =>
+            await cacheClient.ListGetFromRightAsync<T>(SubscriberInfo.QueueKey);
+
+        private async Task PushAsync(T message) =>
+            await exchangeSubscriberService.PushMessageToSubscriberAsync(SubscriberInfo, message);
+
+        public override async Task InitializeAsync()
         {
-            var stopWatch = new Stopwatch();
+            if (OnMessageAsync == null) throw new NullReferenceException("OnMessageAsync is required");
+            await base.InitializeAsync();
+        }
+
+        protected override async Task DoWorkAsync(string arg)
+        {
             int numberOfMessagesProcessed = 0;
-            while(true)
+            while (true)
             {
                 var message = await GetNextMessageAsync();
                 if (message == null) break;
@@ -53,17 +73,12 @@ namespace EasyRedisMQ.Models
                 {
                     await OnMessageAsync(message);
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     await PushAsync(message);
                     throw;
                 }
             }
-        }
-
-        private async Task PushAsync(T message)
-        {
-            await _exchangeSubscriberService.PushMessageToSubscriberAsync(SubscriberInfo, message);
         }
     }
 }
